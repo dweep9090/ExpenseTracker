@@ -1,12 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const ExpenseForm = ({ onAddExpense }) => {
+const ExpenseForm = ({
+  onAddExpense,
+  onUpdateExpense,
+  editingExpense,
+}) => {
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
     category: "",
     description: "",
   });
+
+  useEffect(() => {
+    if (editingExpense) {
+      setFormData({
+        title: editingExpense.title || "",
+        amount: editingExpense.amount || "",
+        category: editingExpense.category || "",
+        description: editingExpense.description || "",
+      });
+    }
+  }, [editingExpense]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -15,14 +30,7 @@ const ExpenseForm = ({ onAddExpense }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    onAddExpense({
-      ...formData,
-      amount: Number(formData.amount),
-    });
-
+  const resetForm = () => {
     setFormData({
       title: "",
       amount: "",
@@ -31,12 +39,31 @@ const ExpenseForm = ({ onAddExpense }) => {
     });
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const expenseData = {
+      ...formData,
+      amount: Number(formData.amount),
+    };
+
+    if (editingExpense) {
+      onUpdateExpense(editingExpense._id, expenseData);
+    } else {
+      onAddExpense(expenseData);
+    }
+
+    resetForm();
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
       className="mb-6 rounded-lg border p-4 shadow"
     >
-      <h2 className="mb-4 text-xl font-semibold">Add Expense</h2>
+      <h2 className="mb-4 text-xl font-semibold">
+        {editingExpense ? "Edit Expense" : "Add Expense"}
+      </h2>
 
       <input
         type="text"
@@ -80,7 +107,7 @@ const ExpenseForm = ({ onAddExpense }) => {
         type="submit"
         className="rounded bg-slate-800 px-4 py-2 text-white"
       >
-        Add Expense
+        {editingExpense ? "Update Expense" : "Add Expense"}
       </button>
     </form>
   );

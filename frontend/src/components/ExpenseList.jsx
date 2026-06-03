@@ -1,6 +1,6 @@
 import ExpenseCard from "./ExpenseCard";
 
-const ExpenseList = ({ expenses, onDelete }) => {
+const ExpenseList = ({ expenses, onDelete, onEdit }) => {
   if (expenses.length === 0) {
     return (
       <p className="text-slate-500">
@@ -20,6 +20,7 @@ const ExpenseList = ({ expenses, onDelete }) => {
           key={expense._id}
           expense={expense}
           onDelete={onDelete}
+          onEdit={onEdit}
         />
       ))}
     </div>

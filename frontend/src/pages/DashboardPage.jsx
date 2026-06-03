@@ -2,19 +2,34 @@ import { useEffect, useState } from "react";
 import useAuth from "../hooks/useAuth";
 import ExpenseForm from "../components/ExpenseForm";
 import ExpenseList from "../components/ExpenseList";
+import SummaryCard from "../components/summaryCard";
 
 import {
   createExpense,
   getExpenses,
   deleteExpense,
+  updateExpense,
 } from "../services/expenseService";
 
 const DashboardPage = () => {
   const { user } = useAuth();
 
   const [expenses, setExpenses] = useState([]);
+  const [editingExpense, setEditingExpense] = useState(null);
+
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const totalExpenses = expenses.reduce(
+    (sum, expense) => sum + expense.amount,
+    0
+  );
+  
+  const totalEntries = expenses.length;
+  
+  const highestExpense =
+    expenses.length > 0
+      ? Math.max(...expenses.map((e) => e.amount))
+      : 0;
 
   const fetchExpenses = async () => {
     try {
@@ -31,6 +46,16 @@ const DashboardPage = () => {
   useEffect(() => {
     fetchExpenses();
   }, []);
+  
+  useEffect(() => {
+    if (!message) return;
+  
+    const timer = setTimeout(() => {
+      setMessage("");
+    }, 3000);
+  
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const handleAddExpense = async (expenseData) => {
     try {
@@ -48,6 +73,32 @@ const DashboardPage = () => {
     }
   };
 
+  const handleEditExpense = (expense) => {
+    setEditingExpense(expense);
+  };
+
+  const handleUpdateExpense = async (id, expenseData) => {
+    try {
+      const updatedExpense = await updateExpense(id, expenseData);
+
+      setExpenses((prev) =>
+        prev.map((expense) =>
+          expense._id === id ? updatedExpense : expense
+        )
+      );
+
+      setEditingExpense(null);
+
+      setMessage("Expense updated successfully!");
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        error.response?.data?.message || "Failed to update expense"
+      );
+    }
+  };
+
   const handleDeleteExpense = async (id) => {
     try {
       await deleteExpense(id);
@@ -55,6 +106,10 @@ const DashboardPage = () => {
       setExpenses((prev) =>
         prev.filter((expense) => expense._id !== id)
       );
+
+      if (editingExpense?._id === id) {
+        setEditingExpense(null);
+      }
 
       setMessage("Expense deleted successfully!");
     } catch (error) {
@@ -76,13 +131,36 @@ const DashboardPage = () => {
         Welcome, {user?.name}
       </p>
 
-      {message && (
-        <div className="mb-4 rounded bg-slate-100 p-3">
-          {message}
-        </div>
-      )}
 
-      <ExpenseForm onAddExpense={handleAddExpense} />
+
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <SummaryCard
+        title="Total Expenses"
+        value={`₹${totalExpenses}`}
+      />
+
+      <SummaryCard
+        title="Total Entries"
+        value={totalEntries}
+      />
+
+      <SummaryCard
+        title="Highest Expense"
+        value={`₹${highestExpense}`}
+      />
+    </div>
+
+    {message && (
+    <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-green-700 shadow-sm">
+      {message}
+    </div>
+  )}
+
+      <ExpenseForm
+        onAddExpense={handleAddExpense}
+        onUpdateExpense={handleUpdateExpense}
+        editingExpense={editingExpense}
+      />
 
       <hr className="my-6" />
 
@@ -92,6 +170,7 @@ const DashboardPage = () => {
         <ExpenseList
           expenses={expenses}
           onDelete={handleDeleteExpense}
+          onEdit={handleEditExpense}
         />
       )}
     </div>
